@@ -109,10 +109,13 @@ margin:8px;
 #select select{
  padding:4px;
 }
- .edit_button{
-   float:right;
-   margin:8px;
- }
+.edit_button{
+ float:right;
+ margin:8px;
+}
+.input_name{
+  width:240px;
+}
 
 @media screen and (max-width:480px) {
  #agenda {
@@ -126,5 +129,5 @@ margin:8px;
 }"#;
 
     #[allow(unused)]
-    pub const ETAG: &'static str = "qsGGoW3KqD95tt0kPi-bdA";
+    pub const ETAG: &'static str = "YsC_NwQSebT8_8SmQ0KRkQ";
 }

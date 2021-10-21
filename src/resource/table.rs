@@ -15,7 +15,7 @@ impl TableHtml {
 <table id="contents">
     <tr>
         <td>
-            <div style="display:inline-block"><input type="text" id="agenda" placeholder="議題"></div>
+            <div style="display:inline-block;margin:12px"><input type="text" id="agenda" placeholder="議題"></div>
             <div class="edit_button"><input type="button" id="set_agenda" class="agenda_button" value="議題設定"><input type="button" id="clear_agenda" class="agenda_button" value="Clear"></div>
         </td>
     </tr>
@@ -55,11 +55,10 @@ impl TableHtml {
     </tr>
 </table>
 
-
 <script src="/js/planning_poker.js"></script>
 </body>
 </html>"#;
 
     #[allow(unused)]
-    pub const ETAG: &'static str = "dJk9G1Y9HOucDul0FNFPBw";
+    pub const ETAG: &'static str = "T893xqSwxuXSItBpnUkdKA";
 }

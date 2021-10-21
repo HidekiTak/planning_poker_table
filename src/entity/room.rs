@@ -160,8 +160,8 @@ impl Room {
             .collect();
         px.replace(p);
 
-        let agenda: String = self.agenda.lock().unwrap().clone().into_inner().clone();
-        let opts: Vec<String> = self.options.lock().unwrap().clone().into_inner().clone();
+        let agenda: String = self.agenda.lock().unwrap().clone().into_inner();
+        let opts: Vec<String> = self.options.lock().unwrap().clone().into_inner();
 
         RoomStatus::new(
             self.name.clone(),
@@ -205,7 +205,7 @@ impl RoomContainer {
         }
     }
 
-    pub fn preserve(&mut self, room_name: Option<&str>) -> String {
+    pub fn preserve(&mut self, room_name: Option<&str>, options: Option<Vec<String>>) -> String {
         let l = self.rooms.lock().unwrap();
         let mut map = l.take();
         let mut new_id: String;
@@ -223,7 +223,7 @@ impl RoomContainer {
                 .unwrap_or_else(|| new_id.clone()),
             show: false,
             agenda: Mutex::new(RefCell::new("".to_string())),
-            options: Mutex::new(RefCell::new(vec![])),
+            options: Mutex::new(RefCell::new(options.unwrap_or_default())),
             player_count: 0,
             players: Mutex::new(RefCell::new(vec![])),
             last_touch: Utc::now().timestamp(),
@@ -297,8 +297,8 @@ impl RoomContainer {
 
     #[allow(dead_code)]
     pub fn edit_with<F>(&mut self, room_id: &str, mut callback: F) -> Result<Rc<RefCell<Room>>>
-        where
-            F: FnMut(Room) -> Room,
+    where
+        F: FnMut(Room) -> Room,
     {
         let l1 = self.rooms.lock().unwrap();
         let r = l1.take();
@@ -373,7 +373,7 @@ mod tests {
             rooms: Arc::new(Mutex::new(Rc::new(RefCell::new(Default::default())))),
         };
 
-        let room_id: String = container.preserve(Some("test_room"));
+        let room_id: String = container.preserve(Some("test_room"), None);
 
         let _ = container
             .edit_with(room_id.as_str(), |mut room| {

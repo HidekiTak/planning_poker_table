@@ -1,0 +1,21 @@
+pub struct NotFoundHtml;
+
+impl NotFoundHtml {
+    pub const CONTENT: &'static str = r#"<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="text/html; charset=UTF-8" http-equiv="Content-Type"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Planning Poker Table - Not Found -</title>
+    <link rel="stylesheet" href="/css/planning_poker.css">
+</head>
+<body>
+<a href="/"><h1>Planning Poker Table - Not Found -</h1></a>
+</body>
+</html>
+"#;
+
+    #[allow(unused)]
+    pub const ETAG: &'static str = "eS-dgrHVWGiSXzAEyAJiaQ";
+}

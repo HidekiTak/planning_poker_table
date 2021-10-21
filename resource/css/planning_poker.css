@@ -106,10 +106,13 @@ margin:8px;
 #select select{
  padding:4px;
 }
- .edit_button{
-   float:right;
-   margin:8px;
- }
+.edit_button{
+ float:right;
+ margin:8px;
+}
+.input_name{
+  width:240px;
+}
 
 @media screen and (max-width:480px) {
  #agenda {

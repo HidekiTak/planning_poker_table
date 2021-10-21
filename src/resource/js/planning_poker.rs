@@ -208,11 +208,13 @@ socket.addEventListener('message', function (event) {
   setTimeout(() => { set_mess(data)}, 0)
 });
 socket.addEventListener('close', function (event) {
-  alert("This connection has been closed");
-  location.href="/";
+  if(location.href.startsWith("http")){
+    alert("This connection has been closed");
+    location.href="/";
+  }
 });
 "#;
 
     #[allow(unused)]
-    pub const ETAG: &'static str = "AtDcCADtvYJWUW56uQH_ug";
+    pub const ETAG: &'static str = "ZHFzQ4asFI3_hDOL1Xb9SA";
 }

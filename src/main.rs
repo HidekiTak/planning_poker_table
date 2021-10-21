@@ -34,6 +34,8 @@ async fn index(req: HttpRequest, web::Path(()): web::Path<()>) -> impl Responder
 pub struct FormParams {
     room: Option<String>,
     name: String,
+    sel_opt: Option<String>,
+    sel_val: Option<String>,
 }
 
 /// Room開設実行
@@ -41,10 +43,27 @@ pub struct FormParams {
 #[post("/")]
 async fn new_room(params: web::Form<FormParams>) -> impl Responder {
     let room_name: Option<&str> = params.room.as_deref();
-    let room_id: String = RoomContainer::instance().preserve(room_name);
+    let options: Option<Vec<String>> =
+        split_map(&params.sel_opt).or_else(|| split_map(&params.sel_val));
+
+    let room_id: String = RoomContainer::instance().preserve(room_name, options);
     HttpResponse::TemporaryRedirect()
         .header(header::LOCATION, format!("/{room_id}", room_id = room_id))
         .finish()
+}
+
+fn split_map(str: &Option<String>) -> Option<Vec<String>> {
+    str.clone()
+        .map(|s| split(s.as_str()))
+        .filter(|v| !v.is_empty())
+}
+
+fn split(str: &str) -> Vec<String> {
+    str.split(',')
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string())
+        .collect()
 }
 
 #[get("/favicon.ico")]

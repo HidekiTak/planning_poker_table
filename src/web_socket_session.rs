@@ -105,7 +105,11 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for PlanningPokerSess
                             }
                             "set_agenda" => {
                                 if let Some(r) = self.room.upgrade() {
-                                    let agenda = mess.get("value").map(|v| v.as_str()).flatten().unwrap_or("");
+                                    let agenda = mess
+                                        .get("value")
+                                        .map(|v| v.as_str())
+                                        .flatten()
+                                        .unwrap_or("");
                                     let mut room = r.take();
                                     room.set_agenda(agenda);
                                     r.replace(room);
@@ -113,13 +117,13 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for PlanningPokerSess
                             }
                             "options" => {
                                 if let Some(options) =
-                                mess.get("value").map(|v| v.as_str()).flatten().map(|s| {
-                                    s.split(',')
-                                        .map(|s| s.trim())
-                                        .filter(|s| !s.is_empty())
-                                        .map(|s| s.to_string())
-                                        .collect()
-                                })
+                                    mess.get("value").map(|v| v.as_str()).flatten().map(|s| {
+                                        s.split(',')
+                                            .map(|s| s.trim())
+                                            .filter(|s| !s.is_empty())
+                                            .map(|s| s.to_string())
+                                            .collect()
+                                    })
                                 {
                                     if let Some(r) = self.room.upgrade() {
                                         let mut room = r.take();

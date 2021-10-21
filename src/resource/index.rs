@@ -15,12 +15,23 @@ impl IndexHtml {
 <form method="post">
     <table>
         <tr>
-            <td>room name:</td>
-            <td><input type="text" name="room"></td>
+            <td>table name:</td>
+            <td><input type="text" class="input_name" name="room"></td>
         </tr>
         <tr>
             <td>your name:</td>
-            <td><input type="text" name="name"></td>
+            <td><input type="text" class="input_name" name="name"></td>
+        </tr>
+        <tr>
+            <td>options:</td>
+            <td>
+                <select id="sel_opt" name="sel_opt">
+                    <option value="0,1,2,3,5,8,13,21,∞,?">0,1,2,3,5,8,13,21,∞,?</option>
+                    <option value="0,0.5,1,2,3,5,8,13,20,40,∞,?">0,0.5,1,2,3,5,8,13,20,40,∞,?</option>
+                    <option value="">手入力</option>
+                </select>
+                <br/><input type="text" id="sel_val" name="sel_val" placeholder="カンマ区切りで選択項目を指定">
+            </td>
         </tr>
         <tr>
             <td colspan="2" style="text-align:center">
@@ -29,10 +40,11 @@ impl IndexHtml {
         </tr>
     </table>
 </form>
+<script src="/js/index.js"></script>
 </body>
 </html>
 "#;
 
     #[allow(unused)]
-    pub const ETAG: &'static str = "Mjjn_CETgdXEH1uEsx3lxw";
+    pub const ETAG: &'static str = "o2CplMyvyY3B7kAdFhKrWA";
 }

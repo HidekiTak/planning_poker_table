@@ -16,7 +16,7 @@ impl IndexHtml {
     <table>
         <tr>
             <td>table name:</td>
-            <td><input type="text" class="input_name" name="room"></td>
+            <td><input type="text" class="input_name" name="table"></td>
         </tr>
         <tr>
             <td>your name:</td>
@@ -47,5 +47,5 @@ impl IndexHtml {
 "#;
 
     #[allow(unused)]
-    pub const ETAG: &'static str = "wpARRrz5GM5hzFGBdwGK9A";
+    pub const ETAG: &'static str = "lgErAobXQYgsbi1YQRNpQQ";
 }

@@ -1,5 +1,6 @@
 use actix::*;
 use actix_web_actors::ws;
+use chrono::Utc;
 use serde_json::Value;
 use std::cell::RefCell;
 use std::ops::Sub;
@@ -7,7 +8,7 @@ use std::rc::{Rc, Weak};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
-use crate::entity::{Player, Room, RoomContainer, RoomStatus};
+use crate::entity::{Player, Table, TableContainer, TableStatus};
 
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(10);
 
@@ -15,9 +16,9 @@ const CLIENT_TIMEOUT: Duration = Duration::from_secs(20);
 
 #[derive(Debug)]
 pub struct PlanningPokerSession {
-    room_id: String,
+    table_id: String,
     player_id: String,
-    room: Weak<RefCell<Room>>,
+    table: Weak<RefCell<Table>>,
     player: Mutex<Rc<RefCell<Player>>>,
     addr: Rc<RefCell<Option<Addr<PlanningPokerSession>>>>,
     /// heartbeat
@@ -28,12 +29,7 @@ pub struct PlanningPokerSession {
 
 impl Drop for PlanningPokerSession {
     fn drop(&mut self) {
-        RoomContainer::instance().exit(&self.room_id, &self.player_id);
-        //
-        // let mutex = self.player.lock().unwrap();
-        // let mut player = mutex.take();
-        // player.exit();
-        // mutex.replace(player);
+        TableContainer::instance().exit(&self.table_id, &self.player_id);
     }
 }
 
@@ -42,23 +38,23 @@ impl Actor for PlanningPokerSession {
 
     /// Method is called on actor start. We start the heartbeat process here.
     fn started(&mut self, ctx: &mut Self::Context) {
-        let r = self.room.upgrade();
+        let r = self.table.upgrade();
         match r {
             None => {}
-            Some(rc_room) => {
-                let mut room = rc_room.take();
-                room.updated();
-                rc_room.replace(room);
+            Some(rc_table) => {
+                let mut table = rc_table.take();
+                table.updated();
+                rc_table.replace(table);
             }
         }
         self.heartbeat(ctx);
     }
 }
 
-impl actix::prelude::Handler<RoomStatus> for PlanningPokerSession {
+impl actix::prelude::Handler<TableStatus> for PlanningPokerSession {
     type Result = ();
 
-    fn handle(&mut self, msg: RoomStatus, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: TableStatus, ctx: &mut Self::Context) -> Self::Result {
         if let Ok(json) = serde_json::to_string(&msg) {
             ctx.text(json)
         }
@@ -83,36 +79,36 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for PlanningPokerSess
                     if let Some(typ) = mess.get("type").map(|v| v.as_str()).flatten() {
                         match typ {
                             "open" => {
-                                if let Some(r) = self.room.upgrade() {
-                                    let mut room = r.take();
-                                    room.open();
-                                    r.replace(room);
+                                if let Some(r) = self.table.upgrade() {
+                                    let mut table = r.take();
+                                    table.open();
+                                    r.replace(table);
                                 }
                             }
                             "reset" => {
-                                if let Some(r) = self.room.upgrade() {
-                                    let mut room = r.take();
-                                    room.reset();
-                                    r.replace(room);
+                                if let Some(r) = self.table.upgrade() {
+                                    let mut table = r.take();
+                                    table.reset();
+                                    r.replace(table);
                                 }
                             }
                             "clear_agenda" => {
-                                if let Some(r) = self.room.upgrade() {
-                                    let mut room = r.take();
-                                    room.set_agenda("");
-                                    r.replace(room);
+                                if let Some(r) = self.table.upgrade() {
+                                    let mut table = r.take();
+                                    table.set_agenda("");
+                                    r.replace(table);
                                 }
                             }
                             "set_agenda" => {
-                                if let Some(r) = self.room.upgrade() {
+                                if let Some(r) = self.table.upgrade() {
                                     let agenda = mess
                                         .get("value")
                                         .map(|v| v.as_str())
                                         .flatten()
                                         .unwrap_or("");
-                                    let mut room = r.take();
-                                    room.set_agenda(agenda);
-                                    r.replace(room);
+                                    let mut table = r.take();
+                                    table.set_agenda(agenda);
+                                    r.replace(table);
                                 }
                             }
                             "options" => {
@@ -125,26 +121,26 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for PlanningPokerSess
                                             .collect()
                                     })
                                 {
-                                    if let Some(r) = self.room.upgrade() {
-                                        let mut room = r.take();
-                                        room.set_options(options);
-                                        r.replace(room);
+                                    if let Some(r) = self.table.upgrade() {
+                                        let mut table = r.take();
+                                        table.set_options(options);
+                                        r.replace(table);
                                     }
                                 }
                             }
                             "vote" => {
                                 let s: Option<&str> =
                                     mess.get("value").map(|v| v.as_str()).flatten();
-                                if let Some(r) = self.room.upgrade() {
-                                    let mut room = r.take();
-                                    if !room.show() {
+                                if let Some(r) = self.table.upgrade() {
+                                    let mut table = r.take();
+                                    if !table.show() {
                                         let l = self.player.lock().unwrap();
                                         let mut player = l.take();
                                         player.voting(s);
                                         l.replace(player);
-                                        room.updated();
+                                        table.updated();
                                     }
-                                    r.replace(room);
+                                    r.replace(table);
                                 }
                             }
                             _ => {}
@@ -163,23 +159,29 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for PlanningPokerSess
 }
 
 impl PlanningPokerSession {
-    pub fn new(room: &Rc<RefCell<Room>>, player: &Rc<RefCell<Player>>) -> Self {
+    pub fn new(table: &Rc<RefCell<Table>>, player: &Rc<RefCell<Player>>) -> Self {
         let pc = Rc::clone(player);
         let px = pc.take();
         let player_id: String = px.id().clone();
         pc.replace(px);
-        let b = room.take();
+        let b = table.take();
         let result = Self {
-            room_id: b.id().clone(),
+            table_id: b.id().clone(),
             player_id,
-            room: Rc::downgrade(room),
+            table: Rc::downgrade(table),
             player: Mutex::new(pc),
             addr: Rc::new(RefCell::new(None)),
             hb: Instant::now(),
             update: Instant::now(),
             send: Instant::now().sub(Duration::new(1000, 0)),
         };
-        room.replace(b);
+        println!(
+            r#"{{"command":"attend","table":"{}","players":{},"at":{}}}"#,
+            &b.id(),
+            &b.player_count(),
+            Utc::now().timestamp_millis()
+        );
+        table.replace(b);
         result
     }
 

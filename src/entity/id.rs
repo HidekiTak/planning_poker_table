@@ -1,5 +1,5 @@
+use chrono::Utc;
 use md5::{Digest, Md5};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 pub struct Id;
 
@@ -7,10 +7,7 @@ impl Id {
     const SEED: &'static [u8] = b"pp_id";
 
     pub fn generate(prefix: &str, seed: Option<&str>) -> String {
-        let duration: Duration = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards");
-        let now: u128 = duration.as_millis();
+        let now: i64 = Utc::now().timestamp_millis();
         let rnd: u128 = rand::random();
         let mut digest: Md5 = Md5::new()
             .chain(Self::SEED)

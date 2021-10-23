@@ -46,11 +46,11 @@ impl ResponseGenerator {
         }
     }
 
-    pub fn generate_cookie_user_name<'a>(user_name: &'a str, room_id: &'a str) -> Cookie<'a> {
+    pub fn generate_cookie_user_name<'a>(user_name: &'a str, table_id: &'a str) -> Cookie<'a> {
         let encoded: String = url::form_urlencoded::byte_serialize(user_name.as_bytes()).collect();
         Cookie::build(Player::COOKIE_NAME, encoded)
             // .domain("localhost")
-            .path(format!("/{}", room_id))
+            .path(format!("/{}", table_id))
             .secure(false)
             .finish()
     }

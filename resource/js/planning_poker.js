@@ -53,8 +53,8 @@ function toPeriodButton(d,v){
 
 function set_mess(data){
   on_update=true
-  document.title="Planning Poker Table - "+data.room_name + " -"
-  document.getElementById("table_name").innerText="- "+data.room_name + " -"
+  document.title="Planning Poker Table - "+data.table_name + " -"
+  document.getElementById("table_name").innerText="- "+data.table_name + " -"
 
   var agenda=document.getElementById("agenda")
   if(agenda.value != data.agenda){

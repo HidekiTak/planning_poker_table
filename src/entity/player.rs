@@ -7,7 +7,7 @@ use std::rc::{Rc, Weak};
 use std::sync::Mutex;
 
 use crate::entity::id::Id;
-use crate::entity::{Room, RoomStatus};
+use crate::entity::{Table, TableStatus};
 use crate::web_socket_session::PlanningPokerSession;
 
 #[derive(Debug, Getters, new, Default)]
@@ -16,7 +16,7 @@ pub struct Player {
     name: String,
     vote_at: i64,
     vote: Option<String>,
-    room: Weak<RefCell<Room>>,
+    table: Weak<RefCell<Table>>,
     addr: Mutex<Rc<RefCell<Option<Addr<PlanningPokerSession>>>>>,
 }
 
@@ -29,46 +29,32 @@ impl PartialEq for Player {
 impl Player {
     pub const COOKIE_NAME: &'static str = "name";
 
-    pub fn enter(room: &Rc<RefCell<Room>>, name: String) -> Rc<RefCell<Player>> {
+    pub fn enter(table: &Rc<RefCell<Table>>, name: String) -> Rc<RefCell<Player>> {
         let id = Id::generate("p", Some(name.as_str()));
         let result = Rc::new(RefCell::new(Player {
             id,
             name,
             vote_at: 0,
             vote: None,
-            room: Rc::downgrade(room),
+            table: Rc::downgrade(table),
             addr: Mutex::new(Rc::new(RefCell::new(None))),
         }));
-        let mut r = room.take();
+        let mut r = table.take();
         r.attend(&result);
-        room.replace(r);
+        table.replace(r);
         result
     }
-
-    // pub fn exit(&mut self) {
-    //     RoomContainer::instance().exit(&self.room_id, sel)
-    //
-    //
-    //     match self.room.upgrade() {
-    //         None => {}
-    //         Some(r) => {
-    //             let mut rx = r.take();
-    //             rx.exit(self);
-    //             r.replace(rx);
-    //         }
-    //     }
-    // }
 
     pub fn set_addr(&mut self, addr: Addr<PlanningPokerSession>) {
         let rc = self.addr.lock().unwrap();
         rc.replace(Some(addr));
     }
 
-    pub fn send(&mut self, status: &RoomStatus) {
+    pub fn send(&mut self, status: &TableStatus) {
         let mutex = self.addr.lock().unwrap();
         let s = mutex.take();
         if let Some(a) = s {
-            let mess: RoomStatus = status.convert_for(self);
+            let mess: TableStatus = status.convert_for(self);
             a.do_send(mess);
             mutex.replace(Some(a));
         } else {

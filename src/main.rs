@@ -3,13 +3,14 @@ mod page;
 mod resource;
 mod web_socket_session;
 
-use crate::entity::{Id, Player, RoomContainer};
-use crate::page::RoomHtml;
+use crate::entity::{Id, Player, TableContainer};
+use crate::page::AttendHtml;
 use crate::resource::{CssFile, IndexHtml, JsFile, NotFoundHtml, ResponseGenerator, TableHtml};
 use actix_web::http::header;
 use actix_web::{
     get, post, web, App, HttpMessage, HttpRequest, HttpResponse, HttpServer, Responder,
 };
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
 
 // <editor-fold desc="pages">
@@ -18,9 +19,20 @@ fn get_if_modified_since(req: &HttpRequest) -> Option<&str> {
     req.headers().get(header::IF_MODIFIED_SINCE)?.to_str().ok()
 }
 
-/// Room開設ページ
+/// Table開設ページ
 #[get("/")]
 async fn index(req: HttpRequest, web::Path(()): web::Path<()>) -> impl Responder {
+    let lang = req
+        .headers()
+        .get(actix_web::http::header::ACCEPT_LANGUAGE)
+        .map(|l| l.to_str().unwrap_or_default())
+        .unwrap_or_default();
+    println!(
+        r#"{{"comand":"index","langs":"{}","at":{}}}"#,
+        lang,
+        Utc::now().timestamp_millis()
+    );
+
     ResponseGenerator::generate_response(
         get_if_modified_since(&req),
         IndexHtml::ETAG,
@@ -31,23 +43,23 @@ async fn index(req: HttpRequest, web::Path(()): web::Path<()>) -> impl Responder
 
 #[derive(Serialize, Deserialize)]
 pub struct FormParams {
-    room: Option<String>,
+    table: Option<String>,
     name: String,
     sel_opt: Option<String>,
     sel_val: Option<String>,
 }
 
-/// Room開設実行
-/// Roomを作って、FormParamsを持ったままroomにPost
+/// Table開設実行
+/// Tableを作って、FormParamsを持ったままtableにPost
 #[post("/")]
-async fn new_room(params: web::Form<FormParams>) -> impl Responder {
-    let room_name: Option<&str> = params.room.as_deref();
+async fn new_table(params: web::Form<FormParams>) -> impl Responder {
+    let table_name: Option<&str> = params.table.as_deref();
     let options: Option<Vec<String>> =
         split_map(&params.sel_opt).or_else(|| split_map(&params.sel_val));
 
-    let room_id: String = RoomContainer::instance().preserve(room_name, options);
+    let table_id: String = TableContainer::instance().preserve(table_name, options);
     HttpResponse::TemporaryRedirect()
-        .header(header::LOCATION, format!("/{room_id}", room_id = room_id))
+        .header(header::LOCATION, format!("/{}", table_id))
         .finish()
 }
 
@@ -79,12 +91,12 @@ async fn check() -> impl Responder {
 
 ///
 /// Player参加用ページ
-#[get("/{room_id}")]
-async fn room(web::Path(room_id): web::Path<String>) -> impl Responder {
-    match RoomContainer::instance().status_of(&room_id) {
+#[get("/{table_id}")]
+async fn table(web::Path(table_id): web::Path<String>) -> impl Responder {
+    match TableContainer::instance().status_of(&table_id) {
         Ok(r) => HttpResponse::Ok()
             .content_type("text/html")
-            .body(RoomHtml::content(r.room_name())),
+            .body(AttendHtml::content(r.table_name())),
         Err(_) => HttpResponse::NotFound()
             .content_type("text/html")
             .body(NotFoundHtml::CONTENT),
@@ -92,19 +104,19 @@ async fn room(web::Path(room_id): web::Path<String>) -> impl Responder {
 }
 
 ///
-/// Roomの
-#[post("/{room_id}")]
+/// Tableの
+#[post("/{table_id}")]
 async fn new_player(
     req: HttpRequest,
-    web::Path(room_id): web::Path<String>,
+    web::Path(table_id): web::Path<String>,
     params: web::Form<FormParams>,
 ) -> impl Responder {
-    match RoomContainer::instance().status_of(&room_id) {
+    match TableContainer::instance().status_of(&table_id) {
         Ok(r) => {
             if r.player_count() < &16 {
                 let cookie = Some(ResponseGenerator::generate_cookie_user_name(
                     params.name.as_str(),
-                    room_id.as_str(),
+                    table_id.as_str(),
                 ));
                 ResponseGenerator::generate_response(
                     get_if_modified_since(&req),
@@ -131,10 +143,10 @@ async fn new_player(
 //  WebSocket
 //
 
-#[get("/{room_id}/ws")]
+#[get("/{table_id}/ws")]
 async fn ws_entry(
     req: HttpRequest,
-    web::Path(room_id): web::Path<String>,
+    web::Path(table_id): web::Path<String>,
     stream: web::Payload,
 ) -> Result<HttpResponse, actix_http::Error> {
     let name: String = req
@@ -147,8 +159,8 @@ async fn ws_entry(
                 .collect()
         })
         .unwrap_or_else(|| Id::generate("", None)[..8].to_string());
-    RoomContainer::instance()
-        .start_web_socket(req, name, &room_id, stream)
+    TableContainer::instance()
+        .start_web_socket(req, name, &table_id, stream)
         .await
 }
 
@@ -184,8 +196,8 @@ async fn main() -> std::io::Result<()> {
             .service(check)
             .service(favicon)
             .service(index)
-            .service(new_room)
-            .service(room)
+            .service(new_table)
+            .service(table)
             .service(new_player)
             .service(css)
             .service(js)

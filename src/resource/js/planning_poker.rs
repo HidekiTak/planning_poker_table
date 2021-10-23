@@ -56,8 +56,8 @@ function toPeriodButton(d,v){
 
 function set_mess(data){
   on_update=true
-  document.title="Planning Poker Table - "+data.room_name + " -"
-  document.getElementById("table_name").innerText="- "+data.room_name + " -"
+  document.title="Planning Poker Table - "+data.table_name + " -"
+  document.getElementById("table_name").innerText="- "+data.table_name + " -"
 
   var agenda=document.getElementById("agenda")
   if(agenda.value != data.agenda){
@@ -330,5 +330,5 @@ socket.addEventListener('close', function (event) {
 "#;
 
     #[allow(unused)]
-    pub const ETAG: &'static str = "4ofHA3XzyC8R6HhnntOohQ";
+    pub const ETAG: &'static str = "kS65OnMukrTriPcv8MEt0Q";
 }

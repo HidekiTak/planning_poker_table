@@ -8,15 +8,30 @@ impl TableHtml {
     <meta content="text/html; charset=UTF-8" http-equiv="Content-Type"/>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Planning Poker Table</title>
-    <link rel="stylesheet" href="/css/planning_poker.css">
+    <link rel="stylesheet" href="./css/planning_poker.css">
 </head>
 <body>
-<h1 id="title">Planning Poker Table</h1>
+<input type="button" class="invite_btn" id="qr_url_1" value="QRCode">
+<input type="button" class="invite_btn" id="invite" value="招待">
+<div id="invite_menu">
+    <div>
+        <div>
+            <input type="button" id="copy_url" value="リンクコピー">
+            <input type="button" id="qr_url_2" value="QRCode">
+        </div>
+    </div>
+</div>
+<div id="qr" style="display:none">
+    <canvas id="qr_img"></canvas>
+</div>
+<div id="title">Planning Poker Table <span id="table_name"></span></div>
 <table id="contents">
     <tr>
         <td>
             <div style="display:inline-block;margin:12px"><input type="text" id="agenda" placeholder="議題"></div>
-            <div class="edit_button"><input type="button" id="set_agenda" class="agenda_button" value="議題設定"><input type="button" id="clear_agenda" class="agenda_button" value="Clear"></div>
+            <div class="edit_button">
+                <input type="button" id="set_agenda" class="agenda_button" value="議題設定">
+                <input type="button" id="clear_agenda" class="agenda_button" value="Clear"></div>
         </td>
     </tr>
     <tr>
@@ -46,6 +61,7 @@ impl TableHtml {
                 <select id="sel_opt">
                     <option value="0,1,2,3,5,8,13,21,∞,?">0,1,2,3,5,8,13,21,∞,?</option>
                     <option value="0,0.5,1,2,3,5,8,13,20,40,∞,?">0,0.5,1,2,3,5,8,13,20,40,∞,?</option>
+                    <option value="ぐー,ちょき,ぱー">ぐー,ちょき,ぱー</option>
                     <option value="">手入力</option>
                 </select>
                 <br/><input type="text" id="sel_val" name="values" placeholder="カンマ区切りで選択項目を指定">
@@ -55,10 +71,10 @@ impl TableHtml {
     </tr>
 </table>
 
-<script src="/js/planning_poker.js"></script>
+<script src="./js/planning_poker.js"></script>
 </body>
 </html>"#;
 
     #[allow(unused)]
-    pub const ETAG: &'static str = "T893xqSwxuXSItBpnUkdKA";
+    pub const ETAG: &'static str = "Bvui-YILFqRPczviO3JkTw";
 }

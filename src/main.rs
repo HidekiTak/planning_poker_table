@@ -3,14 +3,13 @@ mod page;
 mod resource;
 mod web_socket_session;
 
-use crate::entity::{Player, RoomContainer};
+use crate::entity::{Id, Player, RoomContainer};
 use crate::page::RoomHtml;
 use crate::resource::{CssFile, IndexHtml, JsFile, NotFoundHtml, ResponseGenerator, TableHtml};
 use actix_web::http::header;
 use actix_web::{
     get, post, web, App, HttpMessage, HttpRequest, HttpResponse, HttpServer, Responder,
 };
-use chrono::Utc;
 use serde::{Deserialize, Serialize};
 
 // <editor-fold desc="pages">
@@ -147,7 +146,7 @@ async fn ws_entry(
                 .map(|(key, val)| [key, val].concat())
                 .collect()
         })
-        .unwrap_or(format!("player_{}", Utc::now().timestamp_millis()));
+        .unwrap_or_else(|| Id::generate("", None)[..8].to_string());
     RoomContainer::instance()
         .start_web_socket(req, name, &room_id, stream)
         .await

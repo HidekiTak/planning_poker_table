@@ -1,17 +1,34 @@
 pub struct PlanningPokerCss;
 
 impl PlanningPokerCss {
-    pub const CONTENT: &'static str = r#"input[type="button"], input[type="submit"]{
-  -webkit-appearance: button;
-  padding: 8px;
+    pub const CONTENT: &'static str = r#"select{
+  padding:8px;
+  -webkit-appearance:select;
+  appearance:select;
 }
+
+input[type="button"], input[type="submit"], input[type="reset"]{
+  padding: 8px;
+  -webkit-appearance: button;
+  appearance: button;
+  min-width:48px;
+}
+
 td {
   padding:4px;
+}
+#title{
+ font-size:xx-large;
+ font-weight:bold;
+ padding:8px;
+}
+#table_name {
+ white-space: nowrap;
 }
 
 .period_button{
   margin:8px;
-  width:48px;
+  min-width:48px;
   float:left;
 }
 .buttons {
@@ -34,8 +51,8 @@ td {
   width:80px;
 }
 #status{
-font-size:x-large;
-padding-bottom:12px;
+ font-size:x-large;
+ padding-bottom:12px;
 }
 #contents{
  border-top:silver solid thin;
@@ -45,6 +62,32 @@ padding-bottom:12px;
 table#contents > tbody > tr > td {
  border-right:silver solid thin;
  border-bottom:silver solid thin;
+}
+
+.invite_btn{
+ float:right;
+ margin:4px;
+ display:none;
+}
+
+#invite_menu {
+ position:absolute;
+ padding:4px;
+ background-color:white;
+ padding:4px;
+ clear:both;
+ display:none;
+}
+
+#invite_menu>div {
+ border:silver solid thin;
+ padding:4px;
+}
+
+#invite_menu input{
+ padding:8px;
+ width:100%;
+ margin:2px 0px;
 }
 
 #agenda {
@@ -102,9 +145,6 @@ table#contents > tbody > tr > td {
 #select div {
 margin:8px;
 }
-#select input{
- padding:4px;
-}
 
 #select select{
  padding:4px;
@@ -129,5 +169,5 @@ margin:8px;
 }"#;
 
     #[allow(unused)]
-    pub const ETAG: &'static str = "YsC_NwQSebT8_8SmQ0KRkQ";
+    pub const ETAG: &'static str = "btyTquqPsUlgIDVLX0Ua2w";
 }

@@ -56,9 +56,8 @@ function toPeriodButton(d,v){
 
 function set_mess(data){
   on_update=true
-  var ttl="Planning Poker Table - "+data.room_name + " -"
-  document.title=ttl
-  document.getElementById("title").innerText=ttl
+  document.title="Planning Poker Table - "+data.room_name + " -"
+  document.getElementById("table_name").innerText="- "+data.room_name + " -"
 
   var agenda=document.getElementById("agenda")
   if(agenda.value != data.agenda){
@@ -168,6 +167,97 @@ function set_button_event(d,name,fnc){
   }
 }
 
+function loadQRGen(callback){
+  var ga=document.createElement('script')
+  ga.type='text/javascript'
+  ga.src="https://cdn.jsdelivr.net/npm/qrcode@latest/build/qrcode.min.js"
+  ga.addEventListener('load',callback)
+  var s = document.getElementsByTagName('script')[0]
+  s.parentNode.insertBefore( ga, s );
+}
+
+function showCanvas(canvas){
+  hide_invite()
+  var qr=document.getElementById("qr")
+  qr.style="border:silver solid thin;padding:8px;display:initial;position: fixed;top: 50%;left: 50%;transform: translate(-50%, -50%);z-index:999"
+}
+
+function hide_qr(){
+  var qr=document.getElementById("qr")
+  qr.style.display="none"
+}
+function showQR(){
+  if(typeof QRCode ==="undefined"){
+    loadQRGen(showQR)
+  } else {
+    const canvas = document.getElementById("qr_img")
+    QRCode.toCanvas(canvas, location.href, {}, err => {
+      if(err) {alert(err) }else{ showCanvas(canvas)}
+    })
+  }
+}
+
+function hide_invite(){
+  var invite_menu=document.getElementById("invite_menu")
+  invite_menu.style.display="none"
+}
+
+function toggle_invite(){
+ var btn=document.getElementById("invite")
+  var invite_menu=document.getElementById("invite_menu")
+  var hidden=invite_menu.style.display==="none"
+  if(!hidden){
+    invite_menu.style.display="none"
+    return
+  }
+  var pos=getElementTopRight(btn)
+  invite_menu.style.display="initial"
+  invite_menu.style.top=pos.top+'px'
+  invite_menu.style.left=(pos.left-invite_menu.offsetWidth)+'px'
+}
+function getElementTopRight(elm) {
+    var top = elm.offsetHeight+2;
+    var left = elm.offsetWidth/2;
+    while(elm.tagName != "BODY") {
+        top += elm.offsetTop;
+        left += elm.offsetLeft;
+        elm = elm.offsetParent;
+    }
+    return { top: top, left: left };
+}
+
+function copy_clipboard(){
+  if(navigator.clipboard){
+    navigator.clipboard.writeText( location.href);
+  }
+  hide_invite()
+}
+
+function copy_command(){
+  if(document.execCommand){
+    var textarea = document.createElement('textarea');
+    textarea.style.position ='absolute';
+    textarea.style.opacity = 0;
+    textarea.style.pointerEvents = 'none';
+    textarea.value = location.href;
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.setSelectionRange(0, 999999);
+    document.execCommand('copy');
+    textarea.parentNode.removeChild(textarea);
+  }
+  hide_invite()
+}
+function copy_func(){
+  if(navigator.clipboard){
+    return copy_clipboard
+  }
+  if(document.execCommand){
+    return copy_command
+  }
+  return null
+}
+
 (function(){
   var fn=function(name,fnc){
     var elms=document.getElementsByClassName(name)
@@ -180,6 +270,30 @@ function set_button_event(d,name,fnc){
   }
   fn("action_button",action)
   fn("agenda_button",set_agenda)
+
+  var cf=copy_func()
+  if(!cf){
+    var qr_url=document.getElementById("qr_url_1")
+    qr_url.style.display="initial"
+    qr_url.addEventListener('click',showQR)
+  }else{
+    var invite=document.getElementById("invite")
+    invite.style.display="initial"
+    invite.addEventListener('click',toggle_invite)
+
+    var copy_url=document.getElementById("copy_url")
+    copy_url.addEventListener('click',cf)
+
+    var qr_url=document.getElementById("qr_url_2")
+    if(qr_url){
+     qr_url.addEventListener('click',showQR)
+    }
+  }
+
+  var qr_img=document.getElementById("qr_img")
+  if(qr_img){
+    qr_img.addEventListener('click',hide_qr)
+  }
 
   var txt=document.getElementById("sel_val")
   txt.addEventListener('keyup',function(ev){
@@ -216,5 +330,5 @@ socket.addEventListener('close', function (event) {
 "#;
 
     #[allow(unused)]
-    pub const ETAG: &'static str = "ZHFzQ4asFI3_hDOL1Xb9SA";
+    pub const ETAG: &'static str = "4ofHA3XzyC8R6HhnntOohQ";
 }

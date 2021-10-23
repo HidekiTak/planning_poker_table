@@ -15,8 +15,8 @@ pub struct PlayerStatus {
 
 #[derive(Debug, Serialize, new, Clone, PartialEq, Getters, Message)]
 #[rtype(result = "()")]
-pub struct RoomStatus {
-    room_name: String,
+pub struct TableStatus {
+    table_name: String,
     status: String,
     agenda: String,
     options: Vec<String>,
@@ -25,8 +25,8 @@ pub struct RoomStatus {
     at: i64,
 }
 
-impl RoomStatus {
-    pub fn convert_for(&self, player: &Player) -> RoomStatus {
+impl TableStatus {
+    pub fn convert_for(&self, player: &Player) -> TableStatus {
         let open = self.status == "open";
         let plyrs: Vec<PlayerStatus> = self
             .votes
@@ -56,8 +56,8 @@ impl RoomStatus {
             })
             .collect();
 
-        RoomStatus::new(
-            self.room_name.clone(),
+        TableStatus::new(
+            self.table_name.clone(),
             self.status.clone(),
             self.agenda.clone(),
             self.options.clone(),
@@ -86,8 +86,8 @@ mod tests {
             Default::default(),
             Mutex::new(Rc::new(RefCell::new(None))),
         );
-        let mut status = RoomStatus {
-            room_name: "Room1".to_string(),
+        let mut status = TableStatus {
+            table_name: "Table1".to_string(),
             status: "open".to_string(),
             agenda: "今日の昼食".to_string(),
             options: vec!["0".to_string(), "1".to_string(), "2".to_string()],
@@ -116,8 +116,8 @@ mod tests {
         status.status = "voting".to_string();
         let result = status.convert_for(&me);
         assert_eq!(
-            &RoomStatus {
-                room_name: "Room1".to_string(),
+            &TableStatus {
+                table_name: "Table1".to_string(),
                 status: "voting".to_string(),
                 agenda: "今日の昼食".to_string(),
                 options: vec!["0".to_string(), "1".to_string(), "2".to_string()],

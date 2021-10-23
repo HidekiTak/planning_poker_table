@@ -10,11 +10,11 @@ use std::collections::HashMap;
 use std::rc::{Rc, Weak};
 use std::sync::{Arc, Mutex, Once};
 
-use crate::entity::{Id, Player, PlayerStatus, RoomStatus};
+use crate::entity::{Id, Player, PlayerStatus, TableStatus};
 use crate::web_socket_session::PlanningPokerSession;
 
 #[derive(Debug, Getters, Default)]
-pub struct Room {
+pub struct Table {
     id: String,
     name: String,
     show: bool,
@@ -25,7 +25,7 @@ pub struct Room {
     last_touch: i64,
 }
 
-impl Room {
+impl Table {
     pub fn attend(&mut self, player: &Rc<RefCell<Player>>) {
         let vec = self.players.lock().unwrap();
         let mut v = vec.take();
@@ -56,11 +56,11 @@ impl Room {
             self.player_count = count;
             pls.replace(r);
         }
-        let close_room: bool = count == 0;
-        if !close_room {
+        let close_table: bool = count == 0;
+        if !close_table {
             self.updated();
         }
-        close_room
+        close_table
     }
 
     pub fn open(&mut self) {
@@ -124,7 +124,7 @@ impl Room {
     }
 
     pub fn updated(&mut self) {
-        let status: RoomStatus = self.freeze();
+        let status: TableStatus = self.freeze();
         let rc_players = self.players.lock().unwrap();
         let mut players = rc_players.take();
         // 各PlayerにSend
@@ -138,7 +138,7 @@ impl Room {
         rc_players.replace(players);
     }
 
-    pub fn freeze(&self) -> RoomStatus {
+    pub fn freeze(&self) -> TableStatus {
         let now: i64 = Utc::now().timestamp_millis();
         let px = self.players.lock().unwrap();
         let p = px.take();
@@ -163,7 +163,7 @@ impl Room {
         let agenda: String = self.agenda.lock().unwrap().clone().into_inner();
         let opts: Vec<String> = self.options.lock().unwrap().clone().into_inner();
 
-        RoomStatus::new(
+        TableStatus::new(
             self.name.clone(),
             if self.show {
                 "open".to_string()
@@ -179,25 +179,25 @@ impl Room {
     }
 }
 
-impl Actor for Room {
+impl Actor for Table {
     type Context = Context<Self>;
 }
 
-type RoomDic = Arc<Mutex<Rc<RefCell<HashMap<String, Rc<RefCell<Room>>>>>>>;
+type TableDic = Arc<Mutex<Rc<RefCell<HashMap<String, Rc<RefCell<Table>>>>>>>;
 
 #[derive(Clone, Getters, new)]
-pub struct RoomContainer {
-    rooms: RoomDic,
+pub struct TableContainer {
+    tables: TableDic,
 }
 
-impl RoomContainer {
-    pub fn instance() -> Box<RoomContainer> {
-        static mut SINGLETON: Option<Box<RoomContainer>> = None;
+impl TableContainer {
+    pub fn instance() -> Box<TableContainer> {
+        static mut SINGLETON: Option<Box<TableContainer>> = None;
         static ONCE: Once = Once::new();
         unsafe {
             ONCE.call_once(|| {
-                let singleton = RoomContainer {
-                    rooms: Arc::new(Mutex::new(Rc::new(RefCell::new(HashMap::new())))),
+                let singleton = TableContainer {
+                    tables: Arc::new(Mutex::new(Rc::new(RefCell::new(HashMap::new())))),
                 };
                 SINGLETON = Some(Box::new(singleton));
             });
@@ -205,22 +205,22 @@ impl RoomContainer {
         }
     }
 
-    pub fn preserve(&mut self, room_name: Option<&str>, options: Option<Vec<String>>) -> String {
-        let l = self.rooms.lock().unwrap();
+    pub fn preserve(&mut self, table_name: Option<&str>, options: Option<Vec<String>>) -> String {
+        let l = self.tables.lock().unwrap();
         let mut map = l.take();
         let mut new_id: String;
         loop {
-            new_id = Id::generate("r", room_name);
+            new_id = Id::generate("r", table_name);
             if !map.contains_key(&new_id) {
                 break;
             }
         }
-        let rmn: String = room_name
+        let rmn: String = table_name
             .filter(|s| !s.is_empty())
             .map(|s| s.to_string())
             .unwrap_or_else(|| format!("Table {}", new_id[..8].to_string()));
 
-        let room = Room {
+        let table = Table {
             id: new_id.clone(),
             name: rmn,
             show: false,
@@ -231,25 +231,25 @@ impl RoomContainer {
             last_touch: Utc::now().timestamp(),
         };
 
-        map.insert(new_id.clone(), Rc::new(RefCell::new(room)));
+        map.insert(new_id.clone(), Rc::new(RefCell::new(table)));
         l.replace(map);
         new_id
     }
 
-    pub fn exit(&mut self, room_id: &str, player_id: &str) {
-        let rl = self.rooms.lock().unwrap();
+    pub fn exit(&mut self, table_id: &str, player_id: &str) {
+        let rl = self.tables.lock().unwrap();
         let mut map = rl.take();
-        let remove_room = match map.get(room_id) {
+        let remove_table = match map.get(table_id) {
             None => false,
-            Some(rc_room) => {
-                let mut room: Room = rc_room.take();
-                let close_room: bool = room.exit(player_id);
-                rc_room.replace(room);
-                close_room
+            Some(rc_table) => {
+                let mut table: Table = rc_table.take();
+                let close_table: bool = table.exit(player_id);
+                rc_table.replace(table);
+                close_table
             }
         };
-        if remove_room {
-            map.remove(room_id);
+        if remove_table {
+            map.remove(table_id);
         }
         rl.replace(map);
     }
@@ -258,13 +258,13 @@ impl RoomContainer {
         &mut self,
         req: HttpRequest,
         name: String,
-        room_id: &str,
+        table_id: &str,
         stream: web::Payload,
     ) -> Result<HttpResponse, actix_http::Error> {
-        let l1 = self.rooms.lock().unwrap();
+        let l1 = self.tables.lock().unwrap();
         let x = l1.take();
-        if let Some(rc_room) = x.get(room_id) {
-            let r = &Rc::clone(rc_room);
+        if let Some(rc_table) = x.get(table_id) {
+            let r = &Rc::clone(rc_table);
             let player: Rc<RefCell<Player>> = Player::enter(r, name);
             let session: PlanningPokerSession = PlanningPokerSession::new(r, &player);
 
@@ -281,19 +281,19 @@ impl RoomContainer {
     }
 
     #[allow(dead_code)]
-    pub fn edit_with<F>(&mut self, room_id: &str, mut callback: F) -> Result<Rc<RefCell<Room>>>
+    pub fn edit_with<F>(&mut self, table_id: &str, mut callback: F) -> Result<Rc<RefCell<Table>>>
     where
-        F: FnMut(Room) -> Room,
+        F: FnMut(Table) -> Table,
     {
-        let l1 = self.rooms.lock().unwrap();
+        let l1 = self.tables.lock().unwrap();
         let r = l1.take();
-        let result = match r.get(room_id) {
+        let result = match r.get(table_id) {
             None => {
                 l1.replace(r);
-                anyhow::bail!(format!("not found room: {}", room_id))
+                anyhow::bail!(format!("not found table: {}", table_id))
             }
             Some(x) => {
-                let z: Room = callback(x.take());
+                let z: Table = callback(x.take());
                 x.replace(z);
                 Ok(x.clone())
             }
@@ -302,19 +302,19 @@ impl RoomContainer {
         result
     }
 
-    pub fn status_of(&mut self, room_id: &str) -> Result<RoomStatus> {
-        let r = self.rooms.lock().unwrap();
+    pub fn status_of(&mut self, table_id: &str) -> Result<TableStatus> {
+        let r = self.tables.lock().unwrap();
         let l = r.take();
-        let result = match l.get(room_id) {
+        let result = match l.get(table_id) {
             None => {
                 r.replace(l);
-                anyhow::bail!(format!("not found room: {}", room_id))
+                anyhow::bail!(format!("not found table: {}", table_id))
             }
             Some(x) => {
-                let z: Room = x.take();
-                let room_status = z.freeze();
+                let z: Table = x.take();
+                let table_status = z.freeze();
                 x.replace(z);
-                Ok(room_status)
+                Ok(table_status)
             }
         };
         r.replace(l);
@@ -354,24 +354,24 @@ mod tests {
             Mutex::new(Rc::new(RefCell::new(None))),
         )));
 
-        let mut container = RoomContainer {
-            rooms: Arc::new(Mutex::new(Rc::new(RefCell::new(Default::default())))),
+        let mut container = TableContainer {
+            tables: Arc::new(Mutex::new(Rc::new(RefCell::new(Default::default())))),
         };
 
-        let room_id: String = container.preserve(Some("test_room"), None);
+        let table_id: String = container.preserve(Some("test_table"), None);
 
         let _ = container
-            .edit_with(room_id.as_str(), |mut room| {
-                room.attend(&me);
-                room.attend(&player_1);
-                room.attend(&player_2);
-                room
+            .edit_with(table_id.as_str(), |mut table| {
+                table.attend(&me);
+                table.attend(&player_1);
+                table.attend(&player_2);
+                table
             })
             .unwrap();
 
         let m: Player = me.take();
-        let send_mess: RoomStatus = container
-            .status_of(room_id.as_str())
+        let send_mess: TableStatus = container
+            .status_of(table_id.as_str())
             .unwrap()
             .convert_for(&m);
         me.replace(m);
@@ -379,15 +379,15 @@ mod tests {
         println!("{:?}", &serde_json::to_string(&send_mess));
 
         let _ = container
-            .edit_with(room_id.as_str(), |mut room| {
-                room.show = true;
-                room
+            .edit_with(table_id.as_str(), |mut table| {
+                table.show = true;
+                table
             })
             .unwrap();
 
         let m: Player = me.take();
-        let send_mess: RoomStatus = container
-            .status_of(room_id.as_str())
+        let send_mess: TableStatus = container
+            .status_of(table_id.as_str())
             .unwrap()
             .convert_for(&m);
         me.replace(m);

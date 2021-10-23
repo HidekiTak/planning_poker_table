@@ -1,5 +1,3 @@
-mod room_html;
-// mod table_html;
+mod attend_html;
 
-pub use room_html::RoomHtml;
-// pub use table_html::TableHtml;
+pub use attend_html::AttendHtml;

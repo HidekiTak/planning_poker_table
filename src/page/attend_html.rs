@@ -1,8 +1,8 @@
-pub struct RoomHtml;
+pub struct AttendHtml;
 
 /// ルームにPlayerが参加
-impl RoomHtml {
-    pub fn content(room_name: &str) -> String {
+impl AttendHtml {
+    pub fn content(table_name: &str) -> String {
         format!(
             r#"<!DOCTYPE html>
 <html lang="ja">
@@ -18,8 +18,8 @@ impl RoomHtml {
 <form method="post">
     <table>
         <tr>
-            <td>room name:</td>
-            <td>{room_name}</td>
+            <td>table name:</td>
+            <td>{table_name}</td>
         </tr>
         <tr>
             <td>your name:</td>
@@ -33,7 +33,7 @@ impl RoomHtml {
 </body>
 </html>
 "#,
-            room_name = room_name
+            table_name = table_name
         )
     }
 }

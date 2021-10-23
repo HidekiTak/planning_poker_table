@@ -215,12 +215,14 @@ impl RoomContainer {
                 break;
             }
         }
+        let rmn: String = room_name
+            .filter(|s| !s.is_empty())
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| format!("Table {}", new_id[..8].to_string()));
 
         let room = Room {
             id: new_id.clone(),
-            name: room_name
-                .map(|n| n.to_string())
-                .unwrap_or_else(|| new_id.clone()),
+            name: rmn,
             show: false,
             agenda: Mutex::new(RefCell::new("".to_string())),
             options: Mutex::new(RefCell::new(options.unwrap_or_default())),
@@ -276,23 +278,6 @@ impl RoomContainer {
             l1.replace(x);
             Ok(HttpResponse::NotFound().finish())
         }
-
-        //
-        // let result = match r.get(room_id) {
-        //     None => Ok(HttpResponse::NotFound().finish()),
-        //     Some(rc_room) => {
-        //         let player: Rc<RefCell<Player>> = Player::enter(rc_room, name);
-        //         let session: PlanningPokerSession = PlanningPokerSession::new(rc_room, &player);
-        //
-        //         let (addr, res) = ws::start_with_addr(session, &req, stream)?;
-        //         let mut p = player.take();
-        //         p.set_addr(addr);
-        //         player.replace(p);
-        //         Ok(res)
-        //     }
-        // };
-        // l1.replace(r);
-        // result
     }
 
     #[allow(dead_code)]

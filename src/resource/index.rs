@@ -28,6 +28,7 @@ impl IndexHtml {
                 <select id="sel_opt" name="sel_opt">
                     <option value="0,1,2,3,5,8,13,21,∞,?">0,1,2,3,5,8,13,21,∞,?</option>
                     <option value="0,0.5,1,2,3,5,8,13,20,40,∞,?">0,0.5,1,2,3,5,8,13,20,40,∞,?</option>
+                    <option value="ぐー,ちょき,ぱー">ぐー,ちょき,ぱー</option>
                     <option value="">手入力</option>
                 </select>
                 <br/><input type="text" id="sel_val" name="sel_val" placeholder="カンマ区切りで選択項目を指定">
@@ -46,5 +47,5 @@ impl IndexHtml {
 "#;
 
     #[allow(unused)]
-    pub const ETAG: &'static str = "o2CplMyvyY3B7kAdFhKrWA";
+    pub const ETAG: &'static str = "wpARRrz5GM5hzFGBdwGK9A";
 }

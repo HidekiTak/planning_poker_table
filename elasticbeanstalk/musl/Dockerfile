@@ -1,4 +1,4 @@
-FROM scratch
+FROM alpine
 
 COPY PlanningPoker/planning_poker /
 

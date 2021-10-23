@@ -10,6 +10,7 @@ use actix_web::http::header;
 use actix_web::{
     get, post, web, App, HttpMessage, HttpRequest, HttpResponse, HttpServer, Responder,
 };
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
 
 // <editor-fold desc="pages">
@@ -21,6 +22,17 @@ fn get_if_modified_since(req: &HttpRequest) -> Option<&str> {
 /// Table開設ページ
 #[get("/")]
 async fn index(req: HttpRequest, web::Path(()): web::Path<()>) -> impl Responder {
+    let lang = req
+        .headers()
+        .get(actix_web::http::header::ACCEPT_LANGUAGE)
+        .map(|l| l.to_str().unwrap_or_default())
+        .unwrap_or_default();
+    println!(
+        r#"{{"comand":"index","langs":"{}","at":{}}}"#,
+        lang,
+        Utc::now().timestamp_millis()
+    );
+
     ResponseGenerator::generate_response(
         get_if_modified_since(&req),
         IndexHtml::ETAG,

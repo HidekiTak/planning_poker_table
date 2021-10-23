@@ -5,6 +5,7 @@ use anyhow::*;
 use chrono::Utc;
 use derive_getters::Getters;
 use derive_new::new;
+use serde_json::json;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::{Rc, Weak};
@@ -23,6 +24,7 @@ pub struct Table {
     player_count: usize,
     players: Mutex<RefCell<Vec<Weak<RefCell<Player>>>>>,
     last_touch: i64,
+    open_at: i64,
 }
 
 impl Table {
@@ -64,6 +66,11 @@ impl Table {
     }
 
     pub fn open(&mut self) {
+        println!(
+            r#"{{"command":"open","table":"{}","at":{}}}"#,
+            &self.id(),
+            Utc::now().timestamp_millis()
+        );
         self.show = true;
         self.updated();
     }
@@ -85,6 +92,11 @@ impl Table {
     }
 
     pub fn set_agenda(&mut self, agenda: &str) {
+        println!(
+            r#"{{"command":"set_agenda","table":"{}","at":{}}}"#,
+            &self.id(),
+            Utc::now().timestamp_millis()
+        );
         let update_needed: bool;
         {
             let rc = self.agenda.lock().unwrap();
@@ -100,6 +112,16 @@ impl Table {
     }
 
     pub fn set_options(&mut self, options: Vec<String>) {
+        println!(
+            "{}",
+            json!({
+               "command":"set_options",
+                "table":&self.id(),
+                "options":options,
+                "at":Utc::now().timestamp_millis()
+            })
+        );
+
         if !options.is_empty() {
             {
                 {
@@ -220,17 +242,28 @@ impl TableContainer {
             .map(|s| s.to_string())
             .unwrap_or_else(|| format!("Table {}", new_id[..8].to_string()));
 
+        let at = Utc::now().timestamp_millis();
+        let opts = options.unwrap_or_default();
         let table = Table {
             id: new_id.clone(),
             name: rmn,
             show: false,
             agenda: Mutex::new(RefCell::new("".to_string())),
-            options: Mutex::new(RefCell::new(options.unwrap_or_default())),
+            options: Mutex::new(RefCell::new(opts.clone())),
             player_count: 0,
             players: Mutex::new(RefCell::new(vec![])),
-            last_touch: Utc::now().timestamp(),
+            last_touch: at,
+            open_at: at,
         };
-
+        println!(
+            "{}",
+            json!({
+                "command":"start",
+                "table":&table.id,
+                "options":opts,
+                "at":at
+            })
+        );
         map.insert(new_id.clone(), Rc::new(RefCell::new(table)));
         l.replace(map);
         new_id
@@ -244,6 +277,20 @@ impl TableContainer {
             Some(rc_table) => {
                 let mut table: Table = rc_table.take();
                 let close_table: bool = table.exit(player_id);
+                let now = Utc::now().timestamp_millis();
+                if close_table {
+                    println!(
+                        r#"{{"command":"close","table":"{}","at":{},"period":{}}}"#,
+                        &table.id,
+                        now,
+                        now - table.open_at
+                    );
+                } else {
+                    println!(
+                        r#"{{"command":"exit","table":"{}","players":{},"at":{}}}"#,
+                        &table.id, &table.player_count, now
+                    );
+                }
                 rc_table.replace(table);
                 close_table
             }

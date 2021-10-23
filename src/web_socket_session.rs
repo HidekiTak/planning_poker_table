@@ -1,5 +1,6 @@
 use actix::*;
 use actix_web_actors::ws;
+use chrono::Utc;
 use serde_json::Value;
 use std::cell::RefCell;
 use std::ops::Sub;
@@ -29,11 +30,6 @@ pub struct PlanningPokerSession {
 impl Drop for PlanningPokerSession {
     fn drop(&mut self) {
         TableContainer::instance().exit(&self.table_id, &self.player_id);
-        //
-        // let mutex = self.player.lock().unwrap();
-        // let mut player = mutex.take();
-        // player.exit();
-        // mutex.replace(player);
     }
 }
 
@@ -179,6 +175,12 @@ impl PlanningPokerSession {
             update: Instant::now(),
             send: Instant::now().sub(Duration::new(1000, 0)),
         };
+        println!(
+            r#"{{"command":"attend","table":"{}","players":{},"at":{}}}"#,
+            &b.id(),
+            &b.player_count(),
+            Utc::now().timestamp_millis()
+        );
         table.replace(b);
         result
     }

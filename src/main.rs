@@ -12,6 +12,7 @@ use actix_web::{
 };
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 
 // <editor-fold desc="pages">
 
@@ -28,16 +29,25 @@ fn get_if_none_match(req: &HttpRequest) -> Option<String> {
 /// Table開設ページ
 #[get("/")]
 async fn index(req: HttpRequest, web::Path(()): web::Path<()>) -> impl Responder {
-    let lang = req
+    let lang: &str = req
         .headers()
         .get(actix_web::http::header::ACCEPT_LANGUAGE)
         .map(|l| l.to_str().unwrap_or_default())
         .unwrap_or_default();
-    println!(
-        r#"{{"comand":"index","langs":"{}","at":{}}}"#,
-        lang,
-        Utc::now().timestamp_millis()
-    );
+    let now: i64 = Utc::now().timestamp_millis();
+    if lang.is_empty() {
+        let peer_addr = req.peer_addr().map(|addr| addr.to_string());
+        println!(
+            "{}",
+            json!({
+                "comand": "index",
+                "peer_addr": peer_addr,
+                "at": now
+            })
+        );
+    } else {
+        println!(r#"{{"comand":"index","langs":"{}","at":{}}}"#, lang, now);
+    }
 
     ResponseGenerator::generate_response(
         get_if_none_match(&req),

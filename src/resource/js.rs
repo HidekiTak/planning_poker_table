@@ -9,7 +9,7 @@ use planning_poker::PlanningPokerJs;
 pub struct JsFile;
 
 impl JsFile {
-    pub fn get(name: &str, if_modified_since: Option<&str>) -> Option<Response> {
+    pub fn get(name: &str, if_modified_since: Option<String>) -> Option<Response> {
         match name {
             "planning_poker.js" => Some(ResponseGenerator::generate_response(
                 if_modified_since,

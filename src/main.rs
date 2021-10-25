@@ -15,8 +15,14 @@ use serde::{Deserialize, Serialize};
 
 // <editor-fold desc="pages">
 
-fn get_if_modified_since(req: &HttpRequest) -> Option<&str> {
-    req.headers().get(header::IF_MODIFIED_SINCE)?.to_str().ok()
+fn get_if_none_match(req: &HttpRequest) -> Option<String> {
+    req.headers().get(header::IF_NONE_MATCH)?.to_str().ok().map(|str|
+        if str.as_bytes()[0] == b'"' {
+            str[1..(str.len() - 1)].to_string()
+        } else {
+            str.to_string()
+        }
+    )
 }
 
 /// Table開設ページ
@@ -34,9 +40,9 @@ async fn index(req: HttpRequest, web::Path(()): web::Path<()>) -> impl Responder
     );
 
     ResponseGenerator::generate_response(
-        get_if_modified_since(&req),
-        IndexHtml::ETAG,
-        IndexHtml::CONTENT,
+        get_if_none_match(&req),
+        index_html.etag(),
+        index_html.content(),
         None,
     )
 }
@@ -119,7 +125,7 @@ async fn new_player(
                     table_id.as_str(),
                 ));
                 ResponseGenerator::generate_response(
-                    get_if_modified_since(&req),
+                    get_if_none_match(&req),
                     TableHtml::ETAG,
                     TableHtml::CONTENT,
                     cookie,
@@ -173,13 +179,13 @@ async fn ws_entry(
 
 #[get("/js/{file_name}")]
 async fn js(req: HttpRequest, web::Path(file_name): web::Path<String>) -> impl Responder {
-    JsFile::get(file_name.as_str(), get_if_modified_since(&req))
+    JsFile::get(file_name.as_str(), get_if_none_match(&req))
         .unwrap_or_else(|| HttpResponse::NotFound().finish())
 }
 
 #[get("/css/{file_name}")]
 async fn css(req: HttpRequest, web::Path(file_name): web::Path<String>) -> impl Responder {
-    CssFile::get(file_name.as_str(), get_if_modified_since(&req))
+    CssFile::get(file_name.as_str(), get_if_none_match(&req))
         .unwrap_or_else(|| HttpResponse::NotFound().finish())
 }
 // </editor-fold>

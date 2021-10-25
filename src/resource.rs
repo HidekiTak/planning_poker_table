@@ -20,13 +20,13 @@ pub struct ResponseGenerator;
 
 impl ResponseGenerator {
     pub fn generate_response(
-        if_modified_since: Option<&str>,
+        if_modified_since: Option<String>,
         etag: &str,
         content: &str,
         cookie: Option<Cookie>,
     ) -> Response {
         if let Some(since) = if_modified_since {
-            if etag == since {
+            if etag == &since {
                 return if let Some(c) = cookie {
                     Response::NotModified().cookie(c).finish()
                 } else {

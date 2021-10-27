@@ -20,7 +20,7 @@ pub struct ResponseGenerator;
 
 impl ResponseGenerator {
     pub fn generate_response(
-        if_modified_since: Option<&str>,
+        if_modified_since: Option<String>,
         etag: &str,
         content: &str,
         cookie: Option<Cookie>,

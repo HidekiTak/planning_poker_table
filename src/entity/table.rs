@@ -1,4 +1,5 @@
 use actix::{Actor, Context};
+use actix_http::Response;
 use actix_web::{web, HttpRequest, HttpResponse};
 use actix_web_actors::ws;
 use anyhow::*;
@@ -11,7 +12,8 @@ use std::collections::HashMap;
 use std::rc::{Rc, Weak};
 use std::sync::{Arc, Mutex, Once};
 
-use crate::entity::{Id, Player, PlayerStatus, TableStatus};
+use crate::entity::{Id, Player, PlayerStatus, Statistics, TableStatus};
+use crate::resource::IndexHtml;
 use crate::web_socket_session::PlanningPokerSession;
 
 #[derive(Debug, Getters, Default)]
@@ -22,19 +24,25 @@ pub struct Table {
     agenda: Mutex<RefCell<String>>,
     options: Mutex<RefCell<Vec<String>>>,
     player_count: usize,
+    max_players: usize,
     players: Mutex<RefCell<Vec<Weak<RefCell<Player>>>>>,
     last_touch: i64,
     open_at: i64,
 }
 
 impl Table {
-    pub fn attend(&mut self, player: &Rc<RefCell<Player>>) {
+    pub fn attend(&mut self, player: &Rc<RefCell<Player>>) -> bool {
         let vec = self.players.lock().unwrap();
         let mut v = vec.take();
         v = v.into_iter().filter(|x| x.upgrade().is_some()).collect();
         v.push(Rc::downgrade(player));
         self.player_count = v.len();
+        let statistics_changed: bool = self.player_count > self.max_players;
+        if statistics_changed {
+            self.max_players = self.player_count;
+        }
         vec.replace(v);
+        statistics_changed
     }
 
     pub fn exit(&mut self, player_id: &str) -> bool {
@@ -251,6 +259,7 @@ impl TableContainer {
             agenda: Mutex::new(RefCell::new("".to_string())),
             options: Mutex::new(RefCell::new(opts.clone())),
             player_count: 0,
+            max_players: 0,
             players: Mutex::new(RefCell::new(vec![])),
             last_touch: at,
             open_at: at,
@@ -291,12 +300,24 @@ impl TableContainer {
                         &table.id, &table.player_count, now
                     );
                 }
+                if close_table {
+                    let st: Statistics = Statistics::table_closed(&table);
+                    IndexHtml::update_count(st);
+                }
                 rc_table.replace(table);
                 close_table
             }
         };
         if remove_table {
             map.remove(table_id);
+        } else {
+            let open_tables = map.len();
+            let open_players = map
+                .clone()
+                .iter()
+                .fold(0, |i, b| i + b.1.borrow().player_count);
+            let st: Statistics = Statistics::open_table_changed(open_tables, open_players);
+            IndexHtml::update_count(st);
         }
         rl.replace(map);
     }
@@ -308,18 +329,32 @@ impl TableContainer {
         table_id: &str,
         stream: web::Payload,
     ) -> Result<HttpResponse, actix_http::Error> {
+        let statistics_changed: bool;
+        let open_tables: usize;
+        let open_players: usize;
         let l1 = self.tables.lock().unwrap();
         let x = l1.take();
         if let Some(rc_table) = x.get(table_id) {
+            let res: Response;
             let r = &Rc::clone(rc_table);
-            let player: Rc<RefCell<Player>> = Player::enter(r, name);
-            let session: PlanningPokerSession = PlanningPokerSession::new(r, &player);
+            {
+                let (changed, player) = Player::enter(r, name);
+                statistics_changed = changed;
+                let session: PlanningPokerSession = PlanningPokerSession::new(r, &player);
 
-            let (addr, res) = ws::start_with_addr(session, &req, stream)?;
-            let mut p = player.take();
-            p.set_addr(addr);
-            player.replace(p);
-            l1.replace(x);
+                let (addr, r) = ws::start_with_addr(session, &req, stream)?;
+                res = r;
+                let mut p = player.take();
+                p.set_addr(addr);
+                player.replace(p);
+                open_tables = x.len();
+                open_players = x.iter().fold(0, |x, y| x + y.1.borrow().player_count);
+                l1.replace(x);
+            }
+            if statistics_changed {
+                let st: Statistics = Statistics::open_table_changed(open_tables, open_players);
+                IndexHtml::update_count(st);
+            }
             Ok(res)
         } else {
             l1.replace(x);

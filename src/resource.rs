@@ -26,7 +26,7 @@ impl ResponseGenerator {
         cookie: Option<Cookie>,
     ) -> Response {
         if let Some(since) = if_modified_since {
-            if etag == &since {
+            if etag == since {
                 return if let Some(c) = cookie {
                     Response::NotModified().cookie(c).finish()
                 } else {

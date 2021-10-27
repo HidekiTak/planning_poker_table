@@ -17,13 +17,17 @@ use serde_json::json;
 // <editor-fold desc="pages">
 
 fn get_if_none_match(req: &HttpRequest) -> Option<String> {
-    req.headers().get(header::IF_NONE_MATCH)?.to_str().ok().map(|str|
-        if str.as_bytes()[0] == b'"' {
-            str[1..(str.len() - 1)].to_string()
-        } else {
-            str.to_string()
-        }
-    )
+    req.headers()
+        .get(header::IF_NONE_MATCH)?
+        .to_str()
+        .ok()
+        .map(|str| {
+            if str.as_bytes()[0] == b'"' {
+                str[1..(str.len() - 1)].to_string()
+            } else {
+                str.to_string()
+            }
+        })
 }
 
 /// Table開設ページ
@@ -49,6 +53,7 @@ async fn index(req: HttpRequest, web::Path(()): web::Path<()>) -> impl Responder
         println!(r#"{{"comand":"index","langs":"{}","at":{}}}"#, lang, now);
     }
 
+    let index_html: IndexHtml = IndexHtml::instance();
     ResponseGenerator::generate_response(
         get_if_none_match(&req),
         index_html.etag(),

@@ -29,7 +29,7 @@ impl PartialEq for Player {
 impl Player {
     pub const COOKIE_NAME: &'static str = "name";
 
-    pub fn enter(table: &Rc<RefCell<Table>>, name: String) -> Rc<RefCell<Player>> {
+    pub fn enter(table: &Rc<RefCell<Table>>, name: String) -> (bool, Rc<RefCell<Player>>) {
         let id = Id::generate("p", Some(name.as_str()));
         let result = Rc::new(RefCell::new(Player {
             id,
@@ -40,9 +40,9 @@ impl Player {
             addr: Mutex::new(Rc::new(RefCell::new(None))),
         }));
         let mut r = table.take();
-        r.attend(&result);
+        let statistics_changed: bool = r.attend(&result);
         table.replace(r);
-        result
+        (statistics_changed, result)
     }
 
     pub fn set_addr(&mut self, addr: Addr<PlanningPokerSession>) {
@@ -62,8 +62,6 @@ impl Player {
         }
     }
 
-    // <editor-fold desc="voting">
-
     pub fn voting(&mut self, value: Option<&str>) {
         self.vote = value.map(|v| v.to_string());
         self.vote_at = Utc::now().timestamp_millis();
@@ -73,5 +71,4 @@ impl Player {
         self.vote_at = 0;
         self.vote = None;
     }
-    // </editor-fold>
 }

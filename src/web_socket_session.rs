@@ -74,9 +74,9 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for PlanningPokerSess
                 self.hb = Instant::now();
             }
             Ok(ws::Message::Text(text)) => {
-                if let Ok(mess) = serde_json::from_str(text.as_str()) {
+                if let Ok(mess) = serde_json::from_str(text.to_string().as_str()) {
                     let _: &Value = &mess;
-                    if let Some(typ) = mess.get("type").map(|v| v.as_str()).flatten() {
+                    if let Some(typ) = mess.get("type").and_then(|v| v.as_str()) {
                         match typ {
                             "open" => {
                                 if let Some(r) = self.table.upgrade() {
@@ -101,11 +101,8 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for PlanningPokerSess
                             }
                             "set_agenda" => {
                                 if let Some(r) = self.table.upgrade() {
-                                    let agenda = mess
-                                        .get("value")
-                                        .map(|v| v.as_str())
-                                        .flatten()
-                                        .unwrap_or("");
+                                    let agenda =
+                                        mess.get("value").and_then(|v| v.as_str()).unwrap_or("");
                                     let mut table = r.take();
                                     table.set_agenda(agenda);
                                     r.replace(table);
@@ -113,7 +110,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for PlanningPokerSess
                             }
                             "options" => {
                                 if let Some(options) =
-                                    mess.get("value").map(|v| v.as_str()).flatten().map(|s| {
+                                    mess.get("value").and_then(|v| v.as_str()).map(|s| {
                                         s.split(',')
                                             .map(|s| s.trim())
                                             .filter(|s| !s.is_empty())
@@ -129,8 +126,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for PlanningPokerSess
                                 }
                             }
                             "vote" => {
-                                let s: Option<&str> =
-                                    mess.get("value").map(|v| v.as_str()).flatten();
+                                let s: Option<&str> = mess.get("value").and_then(|v| v.as_str());
                                 if let Some(r) = self.table.upgrade() {
                                     let mut table = r.take();
                                     if !table.show() {

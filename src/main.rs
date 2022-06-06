@@ -7,9 +7,7 @@ use crate::entity::{Id, Player, TableContainer};
 use crate::page::AttendHtml;
 use crate::resource::{CssFile, IndexHtml, JsFile, NotFoundHtml, ResponseGenerator, TableHtml};
 use actix_web::http::header;
-use actix_web::{
-    get, post, web, App, HttpMessage, HttpRequest, HttpResponse, HttpServer, Responder,
-};
+use actix_web::{get, post, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -32,7 +30,9 @@ fn get_if_none_match(req: &HttpRequest) -> Option<String> {
 
 /// Table開設ページ
 #[get("/")]
-async fn index(req: HttpRequest, web::Path(()): web::Path<()>) -> impl Responder {
+async fn index(req: HttpRequest, _path: web::Path<()>) -> impl Responder {
+    // async fn handler(params: web::Path<(String, String)>) {
+    // let (foo, bar) = params.into_inner();
     let lang: &str = req
         .headers()
         .get(actix_web::http::header::ACCEPT_LANGUAGE)
@@ -80,7 +80,7 @@ async fn new_table(params: web::Form<FormParams>) -> impl Responder {
 
     let table_id: String = TableContainer::instance().preserve(table_name, options);
     HttpResponse::TemporaryRedirect()
-        .header(header::LOCATION, format!("/{}", table_id))
+        .append_header((header::LOCATION, format!("/{}", table_id)))
         .finish()
 }
 
@@ -113,8 +113,9 @@ async fn check() -> impl Responder {
 ///
 /// Player参加用ページ
 #[get("/{table_id}")]
-async fn table(web::Path(table_id): web::Path<String>) -> impl Responder {
-    match TableContainer::instance().status_of(&table_id) {
+async fn table(path: web::Path<String>) -> impl Responder {
+    let table_id: String = path.into_inner();
+    match TableContainer::instance().status_of(table_id.as_str()) {
         Ok(r) => HttpResponse::Ok()
             .content_type("text/html")
             .body(AttendHtml::content(r.table_name())),
@@ -129,10 +130,11 @@ async fn table(web::Path(table_id): web::Path<String>) -> impl Responder {
 #[post("/{table_id}")]
 async fn new_player(
     req: HttpRequest,
-    web::Path(table_id): web::Path<String>,
+    path: web::Path<String>,
     params: web::Form<FormParams>,
 ) -> impl Responder {
-    match TableContainer::instance().status_of(&table_id) {
+    let table_id: String = path.into_inner();
+    match TableContainer::instance().status_of(table_id.as_str()) {
         Ok(r) => {
             if r.player_count() < &16 {
                 let cookie = Some(ResponseGenerator::generate_cookie_user_name(
@@ -167,9 +169,10 @@ async fn new_player(
 #[get("/{table_id}/ws")]
 async fn ws_entry(
     req: HttpRequest,
-    web::Path(table_id): web::Path<String>,
+    path: web::Path<String>,
     stream: web::Payload,
 ) -> Result<HttpResponse, actix_http::Error> {
+    let table_id: String = path.into_inner();
     let name: String = req
         .cookie(Player::COOKIE_NAME)
         .map(|x| x.value().to_string())
@@ -181,7 +184,7 @@ async fn ws_entry(
         })
         .unwrap_or_else(|| Id::generate("", None)[..8].to_string());
     TableContainer::instance()
-        .start_web_socket(req, name, &table_id, stream)
+        .start_web_socket(req, name, table_id.as_str(), stream)
         .await
 }
 
@@ -193,13 +196,15 @@ async fn ws_entry(
 //
 
 #[get("/js/{file_name}")]
-async fn js(req: HttpRequest, web::Path(file_name): web::Path<String>) -> impl Responder {
+async fn js(req: HttpRequest, path: web::Path<String>) -> impl Responder {
+    let file_name: String = path.into_inner();
     JsFile::get(file_name.as_str(), get_if_none_match(&req))
         .unwrap_or_else(|| HttpResponse::NotFound().finish())
 }
 
 #[get("/css/{file_name}")]
-async fn css(req: HttpRequest, web::Path(file_name): web::Path<String>) -> impl Responder {
+async fn css(req: HttpRequest, path: web::Path<String>) -> impl Responder {
+    let file_name: String = path.into_inner();
     CssFile::get(file_name.as_str(), get_if_none_match(&req))
         .unwrap_or_else(|| HttpResponse::NotFound().finish())
 }
@@ -227,4 +232,14 @@ async fn main() -> std::io::Result<()> {
     .bind("0.0.0.0:8080")?
     .run()
     .await
+}
+
+#[cfg(test)]
+mod tests {
+    // use super::*;
+
+    #[test]
+    fn test() {
+        println!("test")
+    }
 }

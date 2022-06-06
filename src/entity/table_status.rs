@@ -4,7 +4,7 @@ use derive_getters::Getters;
 use derive_new::new;
 use serde::Serialize;
 
-#[derive(Debug, Serialize, new, Clone, PartialEq, Getters)]
+#[derive(Debug, Serialize, new, Clone, Eq, PartialEq, Getters)]
 pub struct PlayerStatus {
     id: String,
     name: String,
@@ -13,7 +13,7 @@ pub struct PlayerStatus {
     vote: Option<String>,
 }
 
-#[derive(Debug, Serialize, new, Clone, PartialEq, Getters, Message)]
+#[derive(Debug, Serialize, new, Clone, Eq, PartialEq, Getters, Message)]
 #[rtype(result = "()")]
 pub struct TableStatus {
     table_name: String,

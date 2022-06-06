@@ -1,7 +1,8 @@
 use actix::{Actor, Context};
-use actix_http::Response;
+// use actix_http::Response;
 use actix_web::{web, HttpRequest, HttpResponse};
-use actix_web_actors::ws;
+// use actix_web_actors::ws;
+use actix_web_actors::ws::WsResponseBuilder;
 use chrono::Utc;
 use derive_getters::Getters;
 use derive_new::new;
@@ -10,6 +11,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::{Rc, Weak};
 use std::sync::{Arc, Mutex, Once};
+// use actix_web_actors::ws::WsResponseBuilder;
 
 use crate::entity::{Id, Player, PlayerStatus, Statistics, TableStatus};
 use crate::resource::IndexHtml;
@@ -247,7 +249,7 @@ impl TableContainer {
         let rmn: String = table_name
             .filter(|s| !s.is_empty())
             .map(|s| s.to_string())
-            .unwrap_or_else(|| format!("Table {}", new_id[..8].to_string()));
+            .unwrap_or_else(|| format!("Table {}", new_id[..8].to_string().as_str()));
 
         let at = Utc::now().timestamp_millis();
         let opts = options.unwrap_or_default();
@@ -334,14 +336,17 @@ impl TableContainer {
         let l1 = self.tables.lock().unwrap();
         let x = l1.take();
         if let Some(rc_table) = x.get(table_id) {
-            let res: Response;
+            let res: HttpResponse;
             let r = &Rc::clone(rc_table);
             {
                 let (changed, player) = Player::enter(r, name);
                 statistics_changed = changed;
                 let session: PlanningPokerSession = PlanningPokerSession::new(r, &player);
 
-                let (addr, r) = ws::start_with_addr(session, &req, stream)?;
+                // let (addr, r) = ws::start_with_addr(session, &req, stream).unwrap();
+                let (addr, r) = WsResponseBuilder::new(session, &req, stream)
+                    .start_with_addr()
+                    .unwrap();
                 res = r;
                 let mut p = player.take();
                 p.set_addr(addr);
@@ -362,9 +367,13 @@ impl TableContainer {
     }
 
     #[allow(dead_code)]
-    pub fn edit_with<F>(&mut self, table_id: &str, mut callback: F) -> anyhow::Result<Rc<RefCell<Table>>>
-        where
-            F: FnMut(Table) -> Table,
+    pub fn edit_with<F>(
+        &mut self,
+        table_id: &str,
+        mut callback: F,
+    ) -> anyhow::Result<Rc<RefCell<Table>>>
+    where
+        F: FnMut(Table) -> Table,
     {
         let l1 = self.tables.lock().unwrap();
         let r = l1.take();

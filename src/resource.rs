@@ -7,9 +7,9 @@ mod table;
 extern crate url;
 
 use crate::entity::Player;
-use actix_http::http::header::{ETag, EntityTag};
-use actix_http::http::Cookie;
-use actix_http::Response;
+use actix_web::cookie::Cookie;
+use actix_web::http::header::{ETag, EntityTag};
+use actix_web::HttpResponse;
 pub use css::CssFile;
 pub use index::IndexHtml;
 pub use js::JsFile;
@@ -24,24 +24,24 @@ impl ResponseGenerator {
         etag: &str,
         content: &str,
         cookie: Option<Cookie>,
-    ) -> Response {
+    ) -> HttpResponse {
         if let Some(since) = if_modified_since {
             if etag == since {
                 return if let Some(c) = cookie {
-                    Response::NotModified().cookie(c).finish()
+                    HttpResponse::NotModified().cookie(c).finish() // ::NotModified().cookie(c).finish()
                 } else {
-                    Response::NotModified().finish()
+                    HttpResponse::NotModified().finish()
                 };
             }
         }
         if let Some(c) = cookie {
-            Response::Ok()
-                .set(ETag(EntityTag::new(false, etag.to_string())))
+            HttpResponse::Ok()
                 .cookie(c)
+                .insert_header(ETag(EntityTag::new(false, etag.to_string())))
                 .body(content.to_string())
         } else {
-            Response::Ok()
-                .set(ETag(EntityTag::new(false, etag.to_string())))
+            HttpResponse::Ok()
+                .insert_header(ETag(EntityTag::new(false, etag.to_string())))
                 .body(content.to_string())
         }
     }

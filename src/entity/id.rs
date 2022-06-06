@@ -1,4 +1,5 @@
 use chrono::Utc;
+use md5::digest::Update;
 use md5::{Digest, Md5};
 
 pub struct Id;
@@ -15,7 +16,7 @@ impl Id {
             .chain(prefix.as_bytes())
             .chain(rnd.to_be_bytes());
         if let Some(s) = seed {
-            digest.update(s)
+            md5::Digest::update(&mut digest, s)
         }
         let result = digest.finalize();
         let hash: String = base64_url::escape(base64_url::encode(&result).as_str()).to_string();

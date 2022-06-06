@@ -2,7 +2,6 @@ use actix::{Actor, Context};
 use actix_http::Response;
 use actix_web::{web, HttpRequest, HttpResponse};
 use actix_web_actors::ws;
-use anyhow::*;
 use chrono::Utc;
 use derive_getters::Getters;
 use derive_new::new;
@@ -363,9 +362,9 @@ impl TableContainer {
     }
 
     #[allow(dead_code)]
-    pub fn edit_with<F>(&mut self, table_id: &str, mut callback: F) -> Result<Rc<RefCell<Table>>>
-    where
-        F: FnMut(Table) -> Table,
+    pub fn edit_with<F>(&mut self, table_id: &str, mut callback: F) -> anyhow::Result<Rc<RefCell<Table>>>
+        where
+            F: FnMut(Table) -> Table,
     {
         let l1 = self.tables.lock().unwrap();
         let r = l1.take();
@@ -384,7 +383,7 @@ impl TableContainer {
         result
     }
 
-    pub fn status_of(&mut self, table_id: &str) -> Result<TableStatus> {
+    pub fn status_of(&mut self, table_id: &str) -> anyhow::Result<TableStatus> {
         let r = self.tables.lock().unwrap();
         let l = r.take();
         let result = match l.get(table_id) {

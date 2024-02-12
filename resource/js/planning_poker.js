@@ -312,7 +312,7 @@ function copy_func(){
   })
 })()
 
-const socket = new WebSocket('ws://' + window.location.host + window.location.pathname + "/ws");
+const socket = new WebSocket((location.protocol == "http:"?'ws://':'wss://') + window.location.host + window.location.pathname + "/ws");
 socket.addEventListener('message', function (event) {
   if(!event.data) return
   var data = JSON.parse(event.data);
